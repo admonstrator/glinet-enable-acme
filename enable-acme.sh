@@ -5,11 +5,13 @@
 # Thread: https://forum.gl-inet.com/t/script-lets-encrypt-for-gl-inet-router-https-access/41991
 # Author: Admon
 
-SCRIPT_VERSION="2026.01.08.01"
+SCRIPT_VERSION="2026.04.24.01"
 SCRIPT_NAME="enable-acme.sh"
 UPDATE_URL="https://get.admon.me/acme-update"
 REFLECTOR_URL="https://glinet-reflector.admon.me/check?ports=80"
-ACME_SH="/usr/lib/acme/client/acme.sh"
+ACME_SH_PRIMARY="/usr/lib/acme/client/acme.sh"
+ACME_SH_FALLBACK="/usr/lib/acme/acme.sh"
+ACME_SH="$ACME_SH_PRIMARY"
 ACME_HOME="/etc/acme"
 ACME_CERT_HOME="/etc/acme"
 HAS_NGINX=0
@@ -30,6 +32,19 @@ YELLOW='\033[0;33m'
 INFO='\033[0m' # No Color
 
 # Functions
+resolve_acme_sh_path() {
+    local acme_candidate
+
+    for acme_candidate in "$ACME_SH_PRIMARY" "$ACME_SH_FALLBACK"; do
+        if [ -f "$acme_candidate" ]; then
+            ACME_SH="$acme_candidate"
+            return 0
+        fi
+    done
+
+    return 1
+}
+
 invoke_intro() {
     echo "============================================================"
     echo ""
@@ -116,6 +131,11 @@ collect_user_preferences() {
 
 issue_acme_cert() {
     log "INFO" "Issuing certificate for $DDNS_DOMAIN"
+
+    if ! resolve_acme_sh_path; then
+        log "ERROR" "acme.sh not found"
+        return 1
+    fi
     
     # Create directories if they don't exist
     mkdir -p "$ACME_HOME"
@@ -351,8 +371,8 @@ install_prequisites() {
     log "INFO" "Installing acme.sh"
     
     # Check if acme.sh is already installed
-    if [ -f "$ACME_SH" ]; then
-        log "SUCCESS" "acme.sh is already installed"
+    if resolve_acme_sh_path; then
+        log "SUCCESS" "acme.sh is already installed at $ACME_SH"
         return 0
     fi
     
@@ -361,12 +381,12 @@ install_prequisites() {
     opkg install acme >/dev/null 2>&1
     
     # Verify installation
-    if [ ! -f "$ACME_SH" ]; then
+    if ! resolve_acme_sh_path; then
         log "ERROR" "Failed to install acme.sh"
         return 1
     fi
     
-    log "SUCCESS" "acme.sh installed successfully"
+    log "SUCCESS" "acme.sh installed successfully at $ACME_SH"
 }
 
 config_webserver() {
@@ -412,6 +432,11 @@ config_webserver() {
 install_cert_to_webserver() {
     log "INFO" "Installing certificate to webserver(s)"
     FAIL=0
+
+    if ! resolve_acme_sh_path; then
+        log "ERROR" "acme.sh not found"
+        return 1
+    fi
     
     if [ $HAS_NGINX -eq 1 ]; then
         log "INFO" "Installing certificate for nginx"
@@ -494,6 +519,11 @@ invoke_outro() {
 
 install_cronjob() {
     log "INFO" "Installing ACME renewal cron job"
+
+    if ! resolve_acme_sh_path; then
+        log "ERROR" "acme.sh not found"
+        return 1
+    fi
     
     # Create wrapper script for renewal that handles firewall and webservers
     cat > /usr/bin/acme-renew-wrapper.sh << 'EOF'
@@ -501,11 +531,21 @@ install_cronjob() {
 # ACME Certificate Renewal Wrapper
 # Opens firewall, stops webservers, renews certificates, restarts webservers
 
-ACME_SH="/usr/lib/acme/client/acme.sh"
+ACME_SH_PRIMARY="/usr/lib/acme/client/acme.sh"
+ACME_SH_FALLBACK="/usr/lib/acme/acme.sh"
+ACME_SH="$ACME_SH_PRIMARY"
 ACME_HOME="/etc/acme"
 HAS_NGINX=0
 HAS_UHTTPD=0
 NGINX_CONFIG=""
+
+if [ -f "$ACME_SH_PRIMARY" ]; then
+    ACME_SH="$ACME_SH_PRIMARY"
+elif [ -f "$ACME_SH_FALLBACK" ]; then
+    ACME_SH="$ACME_SH_FALLBACK"
+else
+    exit 1
+fi
 
 # Detect webservers
 if [ -f "/etc/init.d/nginx" ]; then
@@ -616,6 +656,11 @@ install_script() {
 
 invoke_renewal() {
     log "INFO" "Renewing certificates"
+
+    if ! resolve_acme_sh_path; then
+        log "ERROR" "acme.sh not found"
+        return 1
+    fi
     
     # Detect webservers if not already set
     if [ $HAS_NGINX -eq 0 ] && [ $HAS_UHTTPD -eq 0 ]; then
@@ -978,7 +1023,9 @@ restore_configuration() {
         
         # Remove cronjob and wrapper script
         log "INFO" "Removing ACME cronjob"
-        "$ACME_SH" --uninstall-cronjob --home "$ACME_HOME" 2>/dev/null || true
+        if resolve_acme_sh_path; then
+            "$ACME_SH" --uninstall-cronjob --home "$ACME_HOME" 2>/dev/null || true
+        fi
         # Remove any cron entries
         if crontab -l 2>/dev/null | grep -q "acme"; then
             crontab -l 2>/dev/null | grep -v "acme.sh" | grep -v "acme-renew-wrapper" | crontab - 2>/dev/null || true
