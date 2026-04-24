@@ -233,17 +233,20 @@ jobs:
 
           # List of expected functions
           functions=(
+            "resolve_acme_sh_path"
             "invoke_intro"
             "collect_user_preferences"
             "open_firewall"
             "preflight_check"
             "install_prequisites"
-            "config_nginx"
-            "get_acme_cert"
+            "issue_acme_cert"
+            "config_webserver"
+            "install_cert_to_webserver"
             "invoke_outro"
             "install_cronjob"
             "install_script"
             "make_permanent"
+            "call_reflector"
             "invoke_update"
             "log"
             "restore_configuration"

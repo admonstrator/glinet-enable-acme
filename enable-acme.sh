@@ -5,7 +5,7 @@
 # Thread: https://forum.gl-inet.com/t/script-lets-encrypt-for-gl-inet-router-https-access/41991
 # Author: Admon
 
-SCRIPT_VERSION="2026.04.24.01"
+SCRIPT_VERSION="2026.04.24.02"
 SCRIPT_NAME="enable-acme.sh"
 UPDATE_URL="https://get.admon.me/acme-update"
 REFLECTOR_URL="https://glinet-reflector.admon.me/check?ports=80"
@@ -631,8 +631,9 @@ EOF
     fi
     
     # Generate random time to distribute load (Let's Encrypt recommendation)
-    RANDOM_HOUR=$((RANDOM % 24))
-    RANDOM_MINUTE=$((RANDOM % 60))
+    RANDOM_SEED=$(date +%s)
+    RANDOM_HOUR=$(awk -v seed="$RANDOM_SEED" 'BEGIN { srand(seed); print int(rand() * 24) }')
+    RANDOM_MINUTE=$(awk -v seed="$RANDOM_SEED" 'BEGIN { srand(seed + 1); print int(rand() * 60) }')
     
     # Install our custom cronjob with random time
     if crontab -l 2>/dev/null | grep -q "acme-renew-wrapper"; then
