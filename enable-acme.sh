@@ -5,7 +5,7 @@
 # Thread: https://forum.gl-inet.com/t/script-lets-encrypt-for-gl-inet-router-https-access/41991
 # Author: Admon
 
-SCRIPT_VERSION="2026.04.24.03"
+SCRIPT_VERSION="2026.06.28.01"
 SCRIPT_NAME="enable-acme.sh"
 UPDATE_URL="https://get.admon.me/acme-update"
 REFLECTOR_URL="https://cgnat.admon.me/check?ports=80"
@@ -14,6 +14,11 @@ ACME_SH_FALLBACK="/usr/lib/acme/acme.sh"
 ACME_SH="$ACME_SH_PRIMARY"
 ACME_HOME="/etc/acme"
 ACME_CERT_HOME="/etc/acme"
+# acme.sh's internal cert store. MUST be a different directory than the install
+# destinations below (/etc/acme/$DOMAIN). If they overlap, acme.sh's --install-cert
+# does `cat "$source" > "$dest"` where source and dest are the same file, which the
+# shell truncates to 0 bytes before reading -> empty cert files -> nginx won't start.
+ACME_INTERNAL_CERT_HOME="/etc/acme/.acme.sh"
 HAS_NGINX=0
 HAS_UHTTPD=0
 NGINX_CONFIG=""
@@ -139,8 +144,12 @@ issue_acme_cert() {
     
     # Create directories if they don't exist
     mkdir -p "$ACME_HOME"
+    # acme.sh's internal store (acme.sh also creates this itself during --issue)
+    mkdir -p "$ACME_INTERNAL_CERT_HOME/$DDNS_DOMAIN"
+    # Install destination for the webservers. acme.sh --install-cert does NOT
+    # create this directory, so it must exist before install_cert_to_webserver runs.
     mkdir -p "$ACME_CERT_HOME/$DDNS_DOMAIN"
-    
+
     # Issue certificate using acme.sh with Let's Encrypt
     "$ACME_SH" --issue \
         -d "$DDNS_DOMAIN" \
@@ -148,7 +157,7 @@ issue_acme_cert() {
         --keylength 2048 \
         --server letsencrypt \
         --home "$ACME_HOME" \
-        --cert-home "$ACME_CERT_HOME" \
+        --cert-home "$ACME_INTERNAL_CERT_HOME" \
         --httpport 80 \
         --force \
         --no-cron
@@ -446,7 +455,8 @@ install_cert_to_webserver() {
             --key-file "/etc/acme/$DDNS_DOMAIN/$DDNS_DOMAIN.key" \
             --fullchain-file "/etc/acme/$DDNS_DOMAIN/fullchain.cer" \
             --reloadcmd "/etc/init.d/nginx restart" \
-            --home "$ACME_HOME"
+            --home "$ACME_HOME" \
+            --cert-home "$ACME_INTERNAL_CERT_HOME"
         
         if [ $? -eq 0 ]; then
             sed -i "s|ssl_certificate .*;|ssl_certificate /etc/acme/$DDNS_DOMAIN/fullchain.cer;|g" "$NGINX_CONFIG"
@@ -467,7 +477,8 @@ install_cert_to_webserver() {
             --key-file "/etc/acme/$DDNS_DOMAIN/$DDNS_DOMAIN.key" \
             --fullchain-file "/etc/acme/$DDNS_DOMAIN/fullchain.cer" \
             --reloadcmd "/etc/init.d/uhttpd restart" \
-            --home "$ACME_HOME"
+            --home "$ACME_HOME" \
+            --cert-home "$ACME_INTERNAL_CERT_HOME"
         
         if [ $? -eq 0 ]; then
             uci set uhttpd.main.cert="/etc/acme/$DDNS_DOMAIN/fullchain.cer"
@@ -1021,6 +1032,8 @@ restore_configuration() {
         if [ -d "$ACME_CERT_HOME" ]; then
             rm -rf "${ACME_CERT_HOME:?}"/* 2>/dev/null || true
         fi
+        # The internal cert store is a hidden dir, so the glob above won't match it
+        rm -rf "${ACME_INTERNAL_CERT_HOME:?}" 2>/dev/null || true
         
         # Remove cronjob and wrapper script
         log "INFO" "Removing ACME cronjob"
