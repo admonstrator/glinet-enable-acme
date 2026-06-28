@@ -5,7 +5,7 @@
 # Thread: https://forum.gl-inet.com/t/script-lets-encrypt-for-gl-inet-router-https-access/41991
 # Author: Admon
 
-SCRIPT_VERSION="2026.04.24.03"
+SCRIPT_VERSION="2026.06.28.01"
 SCRIPT_NAME="enable-acme.sh"
 UPDATE_URL="https://get.admon.me/acme-update"
 REFLECTOR_URL="https://cgnat.admon.me/check?ports=80"

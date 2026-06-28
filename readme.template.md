@@ -257,6 +257,16 @@ Need assistance or have questions?
 
 ---
 
+## 🙌 Contributors
+
+Thanks to everyone who has helped improve this project:
+
+- [**tpak**](https://github.com/tpak) – Fixed `--install-cert` truncating certificate files to 0 bytes on routers where issuance succeeds ([#10](https://github.com/Admonstrator/glinet-enable-acme/pull/10), fixes [#8](https://github.com/Admonstrator/glinet-enable-acme/issues/8))
+
+Want to contribute? [Open an issue or pull request](https://github.com/Admonstrator/glinet-enable-acme/issues)!
+
+---
+
 ## ⚠️ Disclaimer
 
 This script is provided **as-is** without any warranty. Use it at your own risk.
