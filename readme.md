@@ -6,7 +6,7 @@
 
 **Automate SSL/TLS certificates for your GL.iNet router with Let's Encrypt!**
 
-[![License](https://img.shields.io/github/license/Admonstrator/glinet-enable-acme?style=for-the-badge)](LICENSE) [![Stars](https://img.shields.io/badge/stars-26-yellow?style=for-the-badge&logo=github)](https://github.com/Admonstrator/glinet-enable-acme/stargazers)
+[![License](https://img.shields.io/github/license/Admonstrator/glinet-enable-acme?style=for-the-badge)](LICENSE) [![Stars](https://img.shields.io/github/stars/Admonstrator/glinet-enable-acme?style=for-the-badge&logo=github)](https://github.com/Admonstrator/glinet-enable-acme/stargazers) [![Forks](https://img.shields.io/github/forks/Admonstrator/glinet-enable-acme?style=for-the-badge&logo=github)](https://github.com/Admonstrator/glinet-enable-acme/network/members) [![Issues](https://img.shields.io/github/issues/Admonstrator/glinet-enable-acme?style=for-the-badge&logo=github)](https://github.com/Admonstrator/glinet-enable-acme/issues) [![Last Commit](https://img.shields.io/github/last-commit/Admonstrator/glinet-enable-acme?style=for-the-badge&logo=github)](https://github.com/Admonstrator/glinet-enable-acme/commits)
 
 ---
 
@@ -310,17 +310,5 @@ This project is part of a comprehensive collection of tools for GL.iNet routers.
 **Made with ❤️ by [Admon](https://github.com/Admonstrator) for the GL.iNet Community**
 
 ⭐ If you find this useful, please star the repository!
-
-</div>
-
-<div align="center">
-
-_Last updated: 2026-01-07_
-
-</div>
-
-<div align="center">
-
-_Last updated: 2026-06-28_
 
 </div>
